@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option go_package="./wikipedia_proto;wikipedia_proto";
+
+package app;
+
+service App{
+  rpc Process(Request) returns (Id) {}
+  rpc Get(Id) returns (Response) {}
+}
+
+message Request {
+  string Link1 = 1;
+  string Link2 = 2;
+}
+
+message Id {
+  string id = 1;
+}
+
+message Response {
+  repeated string Links = 1;
+  int32 len = 2;
+}
