@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	rabbitmq = "amqp://user:bitnami@51.250.111.90:5672/"
+	rabbitmq = "amqp://guest:guest@localhost:5672/"
 )
 
 func main() {

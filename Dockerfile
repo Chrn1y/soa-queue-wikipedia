@@ -1,8 +1,9 @@
-FROM rabbitmq:latest
+FROM golang:latest
 
-COPY --from=golang:latest /usr/local/go/ /usr/local/go/
-
-ENV PATH="/usr/local/go/bin:${PATH}"
+RUN apt install curl
+RUN curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | sudo bash
+RUN curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.deb.sh | sudo bash
+RUN apt install rabbitmq-server
 
 WORKDIR /temp
 
@@ -13,4 +14,4 @@ RUN go mod download all
 ENV WORKER_COUNT=5
 EXPOSE 8080
 
-CMD ["rabbitmqctl", "start_app", "&", "&&", "go", "run", "./worker", "&", "&&", "go", "run", "./server"]
+CMD ["go", "run", "./worker", "&", "&&", "go", "run", "./server"]

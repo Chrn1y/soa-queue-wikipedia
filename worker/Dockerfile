@@ -10,4 +10,4 @@ EXPOSE 5672
 
 ENV WORKER_COUNT=5
 
-CMD ["go", "run", "worker/."]
+CMD ["go", "run", "worker/.", "&"]
