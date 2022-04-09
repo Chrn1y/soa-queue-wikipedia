@@ -1,6 +1,8 @@
 FROM golang:latest
 
-COPY . ./temp
+WORKDIR /temp
+
+COPY . .
 
 RUN go mod download all
 RUN chmod +x rabbitmq.sh && ./rabbitmq.sh
