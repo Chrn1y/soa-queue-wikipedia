@@ -1,10 +1,11 @@
-FROM docker:latest
+FROM golang:latest
 
-COPY . .
+COPY . ./temp
 
-CMD docker build -t server server/Dockerfile
-CMD docker build -t worker worker/Dockerfile
+RUN go mod download
+RUN chmod +x rabbitmq.sh && ./rabbitmq.sh
 
-CMD ["docker", "run", "-p", "5672:5672", "-d", "bitnami/rabbitmq:latest", "&&",
-     "docker", "run", "-p", "5672:5672", "-p", "8080:8080", "-d", "server", "&&",
-     "docker", "run", "-p", "5672:5672", "-d", "worker"]
+ENV WORKER_COUNT=5
+EXPOSE 8080
+
+CMD ["sudo", "rabbitmqctl", "start_app", "&", "&&", "go", "run", "./worker", "&", "&&", "go", "run", "./server"]
