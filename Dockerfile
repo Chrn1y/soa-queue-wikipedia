@@ -2,7 +2,7 @@ FROM golang:latest
 
 COPY . ./temp
 
-RUN go mod download
+RUN go mod download all
 RUN chmod +x rabbitmq.sh && ./rabbitmq.sh
 
 ENV WORKER_COUNT=5
