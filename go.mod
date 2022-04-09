@@ -3,7 +3,6 @@ module github.com/Chrn1y/soa-queue-wikipedia
 go 1.17
 
 require (
-	github.com/rs/xid v1.4.0
 	github.com/streadway/amqp v1.0.0
 	golang.org/x/net v0.0.0-20220401154927-543a649e0bdd
 	google.golang.org/grpc v1.45.0
