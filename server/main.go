@@ -6,16 +6,16 @@ import (
 	"fmt"
 	wikipedia_proto "github.com/Chrn1y/soa-queue-wikipedia/proto"
 	"github.com/Chrn1y/soa-queue-wikipedia/wikipedia"
-	"github.com/rs/xid"
 	"github.com/streadway/amqp"
 	"google.golang.org/grpc"
+	"hash/fnv"
 	"log"
 	"net"
 	"os"
 )
 
 const (
-	rabbitmq  = "amqp://user:bitnami@51.250.108.205:5672/"
+	rabbitmq  = "amqp://user:bitnami@51.250.111.90:5672/"
 	queueName = "worker-input"
 )
 
@@ -24,13 +24,22 @@ type Impl struct {
 	ch *amqp.Channel
 }
 
+func hash(s string) string {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return fmt.Sprintf("%d", h.Sum32())
+}
+
 func (i *Impl) Process(ctx context.Context, req *wikipedia_proto.Request) (*wikipedia_proto.Id, error) {
-	id := xid.New().String()
+
+	id := hash(req.Link1 + req.Link2)
+
 	inp := &wikipedia.Inp{
 		Id:   id,
 		From: req.Link1,
 		To:   req.Link2,
 	}
+
 	inpBytes, err := json.Marshal(inp)
 	if err != nil {
 		return nil, err
@@ -52,7 +61,6 @@ func (i *Impl) Process(ctx context.Context, req *wikipedia_proto.Request) (*wiki
 
 func (i *Impl) Get(ctx context.Context, id *wikipedia_proto.Id) (*wikipedia_proto.Response, error) {
 	res, err := os.ReadFile(fmt.Sprintf("../results/%s", id.Id))
-	log.Println(string(res))
 	if err != nil {
 		return nil, err
 	}

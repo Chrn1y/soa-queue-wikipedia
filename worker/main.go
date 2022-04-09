@@ -7,13 +7,22 @@ import (
 	"github.com/streadway/amqp"
 	"log"
 	"os"
+	"strconv"
 )
 
 const (
-	rabbitmq = "amqp://user:bitnami@51.250.108.205:5672/"
+	rabbitmq = "amqp://user:bitnami@51.250.111.90:5672/"
 )
 
 func main() {
+	raw := os.Getenv("WORKER_COUNT")
+	if raw == "" {
+		log.Fatal("no WORKER_COUNT was provided")
+	}
+	num, err := strconv.Atoi(raw)
+	if err != nil {
+		log.Fatal(err)
+	}
 	conn, err := amqp.Dial(rabbitmq)
 	if err != nil {
 		log.Fatal(err)
@@ -53,28 +62,29 @@ func main() {
 
 	forever := make(chan bool)
 
-	go func() {
-		for d := range msgs {
-			log.Println("Received a message")
-			inp := &wikipedia.Inp{}
-			err = json.Unmarshal(d.Body, inp)
-			if err != nil {
-				log.Println(err)
-				continue
+	for range make([]struct{}, num) {
+		go func() {
+			for d := range msgs {
+				log.Println("Received a message")
+				inp := &wikipedia.Inp{}
+				err = json.Unmarshal(d.Body, inp)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				process, _ := wikipedia.Process(inp)
+				out, err := json.MarshalIndent(process, "", "\t")
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				err = os.WriteFile(fmt.Sprintf("../results/%s", process.Id), out, 0600)
+				if err != nil {
+					log.Print(err)
+				}
 			}
-			process, _ := wikipedia.Process(inp)
-			//log.Printf("%v", process)
-			out, err := json.MarshalIndent(process, "", "\t")
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			err = os.WriteFile(fmt.Sprintf("../results/%s", process.Id), out, 0600)
-			if err != nil {
-				log.Print(err)
-			}
-		}
-	}()
+		}()
+	}
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	<-forever
