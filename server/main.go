@@ -81,7 +81,7 @@ func main() {
 		log.Fatal("invalid number of arguments")
 	}
 	rabbitmq := "amqp://" + os.Args[1] + ":" + os.Args[2] + "@" + os.Args[3] + ":5672/"
-	workerCloser := worker.Start(rabbitmq, queueName, 5)
+	workerCloser := worker.Start(rabbitmq, queueName, 2)
 	defer workerCloser()
 	log.Println("started workers")
 	conn, err := amqp.Dial(rabbitmq)
@@ -114,7 +114,7 @@ func main() {
 	})
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 	log.Println("Starting server...")
 	if err = s.Serve(l); err != nil {

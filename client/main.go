@@ -9,11 +9,10 @@ import (
 	"log"
 )
 
-const (
-	addr = "127.0.0.1"
-)
-
 func main() {
+	fmt.Println("Введите адрес сервера:")
+	addr := ""
+	fmt.Scanln(&addr)
 	ctx := context.Background()
 	conn, err := grpc.Dial(addr+":8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

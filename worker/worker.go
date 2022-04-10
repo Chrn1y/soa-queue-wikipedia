@@ -48,6 +48,7 @@ func Start(rabbitmq, queueName string, num int) Closer {
 	}
 	for range make([]struct{}, num) {
 		go func() {
+			log.Println("worker started")
 			for d := range msgs {
 				log.Println("Received a message")
 				inp := &wikipedia.Inp{}

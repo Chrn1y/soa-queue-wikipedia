@@ -8,4 +8,4 @@ RUN go mod download all
 
 EXPOSE 8080
 
-CMD ["go", "run", "./server"]
+ENTRYPOINT ["go", "run", "./server"]
