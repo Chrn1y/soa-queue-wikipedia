@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	wikipedia_proto "github.com/Chrn1y/soa-queue-wikipedia/proto"
 	"github.com/Chrn1y/soa-queue-wikipedia/wikipedia"
@@ -22,6 +23,7 @@ const (
 type Impl struct {
 	wikipedia_proto.UnimplementedAppServer
 	ch *amqp.Channel
+	results *worker.Results
 }
 
 func hash(s string) string {
@@ -60,19 +62,13 @@ func (i *Impl) Process(ctx context.Context, req *wikipedia_proto.Request) (*wiki
 }
 
 func (i *Impl) Get(ctx context.Context, id *wikipedia_proto.Id) (*wikipedia_proto.Response, error) {
-	res, err := os.ReadFile(fmt.Sprintf("../results/%s", id.Id))
-	if err != nil {
-		return nil, err
+	res, ok := i.results.Results[id.Id]
+	if !ok {
+		return nil, errors.New("result is not ready")
 	}
-	temp := &wikipedia.Result{}
-	err = json.Unmarshal(res, temp)
-	if err != nil {
-		return nil, err
-	}
-
 	return &wikipedia_proto.Response{
-		Links: temp.Path,
-		Len:   temp.Num,
+		Links: res.Path,
+		Len:   res.Num,
 	}, nil
 }
 
@@ -81,7 +77,7 @@ func main() {
 		log.Fatal("invalid number of arguments")
 	}
 	rabbitmq := "amqp://" + os.Args[1] + ":" + os.Args[2] + "@" + os.Args[3] + ":5672/"
-	workerCloser := worker.Start(rabbitmq, queueName, 2)
+	results, workerCloser := worker.Start(rabbitmq, queueName, 2)
 	defer workerCloser()
 	log.Println("started workers")
 	conn, err := amqp.Dial(rabbitmq)
@@ -111,6 +107,7 @@ func main() {
 	s := grpc.NewServer()
 	wikipedia_proto.RegisterAppServer(s, &Impl{
 		ch: ch,
+		results: results,
 	})
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {

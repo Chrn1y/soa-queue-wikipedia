@@ -2,16 +2,18 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/Chrn1y/soa-queue-wikipedia/wikipedia"
 	"github.com/streadway/amqp"
 	"log"
-	"os"
 )
+
+type Results struct {
+	Results map[string]*wikipedia.Result
+}
 
 type Closer func()
 
-func Start(rabbitmq, queueName string, num int) Closer {
+func Start(rabbitmq, queueName string, num int) (*Results, Closer) {
 	conn, err := amqp.Dial(rabbitmq)
 	if err != nil {
 		log.Fatal(err)
@@ -46,6 +48,7 @@ func Start(rabbitmq, queueName string, num int) Closer {
 	if err != nil {
 		log.Fatal(err)
 	}
+	results := &Results{Results: make(map[string]*wikipedia.Result)}
 	for range make([]struct{}, num) {
 		go func() {
 			log.Println("worker started")
@@ -58,15 +61,16 @@ func Start(rabbitmq, queueName string, num int) Closer {
 					continue
 				}
 				process, _ := wikipedia.Process(inp)
-				out, err := json.MarshalIndent(process, "", "\t")
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				err = os.WriteFile(fmt.Sprintf("../results/%s", process.Id), out, 0600)
-				if err != nil {
-					log.Print(err)
-				}
+				results.Results[process.Id] = process
+				//out, err := json.MarshalIndent(process, "", "\t")
+				//if err != nil {
+				//	log.Println(err)
+				//	continue
+				//}
+				//err = os.WriteFile(fmt.Sprintf("../results/%s", process.Id), out, 0600)
+				//if err != nil {
+				//	log.Print(err)
+				//}
 			}
 		}()
 	}
@@ -74,7 +78,7 @@ func Start(rabbitmq, queueName string, num int) Closer {
 	//for i := range start {
 	//	<-start[i]
 	//}
-	return func() {
+	return results, func() {
 		conn.Close()
 		ch.Close()
 	}
