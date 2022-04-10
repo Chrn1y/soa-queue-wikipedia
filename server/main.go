@@ -6,6 +6,7 @@ import (
 	"fmt"
 	wikipedia_proto "github.com/Chrn1y/soa-queue-wikipedia/proto"
 	"github.com/Chrn1y/soa-queue-wikipedia/wikipedia"
+	"github.com/Chrn1y/soa-queue-wikipedia/worker"
 	"github.com/streadway/amqp"
 	"google.golang.org/grpc"
 	"hash/fnv"
@@ -15,7 +16,6 @@ import (
 )
 
 const (
-	rabbitmq  = "amqp://guest:guest@localhost:5672/"
 	queueName = "worker-input"
 )
 
@@ -77,6 +77,13 @@ func (i *Impl) Get(ctx context.Context, id *wikipedia_proto.Id) (*wikipedia_prot
 }
 
 func main() {
+	if len(os.Args) != 4 {
+		log.Fatal("invalid number of arguments")
+	}
+	rabbitmq := "amqp://" + os.Args[1] + ":" + os.Args[2] + "@" + os.Args[3] + ":5672/"
+	workerCloser := worker.Start(rabbitmq, queueName, 5)
+	defer workerCloser()
+	log.Println("started workers")
 	conn, err := amqp.Dial(rabbitmq)
 	if err != nil {
 		log.Fatal(err)
